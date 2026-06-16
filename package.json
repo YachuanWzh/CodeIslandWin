@@ -1,0 +1,15 @@
+{
+  "name": "codeisland-win",
+  "version": "0.1.0",
+  "description": "Real-time AI coding agent status island for Windows (Claude Code). A Windows port of CodeIsland.",
+  "main": "src/main/main.js",
+  "scripts": {
+    "test": "node --test",
+    "start": "electron .",
+    "bridge": "node src/bridge/bridge.js"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^31.0.0"
+  }
+}
