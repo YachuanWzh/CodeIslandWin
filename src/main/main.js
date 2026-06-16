@@ -68,13 +68,14 @@ async function startServer() {
     onEvent: (event) => appState.handleEvent(event),
     onPermission: (event) => appState.requestPermission(event),
     onQuestion: (event) => {
-      // MVP has no interactive question UI yet. Surface the question as a normal
-      // notification and acknowledge immediately so the agent is never blocked
-      // waiting on a prompt the user can't answer here. (Interactive answering
-      // is wired through appState.requestQuestion/resolveQuestion for later.)
+      // Plain notification-style questions (no AskUserQuestion tool). No
+      // interactive UI for these yet; acknowledge so the agent isn't blocked.
       appState.handleEvent(event);
       return null;
     },
+    // AskUserQuestion: interactive select/type. Blocks until the user answers in
+    // the island; resolves with the full PermissionRequest allow+answers object.
+    onAskUserQuestion: (event) => appState.requestAskUserQuestion(event),
   });
   await server.start();
 }
@@ -108,6 +109,8 @@ app.whenReady().then(async () => {
 ipcMain.on('resize', (_evt, height) => positionTopCenter(height));
 ipcMain.on('permission-decision', (_evt, { key, behavior }) => appState.resolvePermission(key, behavior));
 ipcMain.on('question-answer', (_evt, { key, answer }) => appState.resolveQuestion(key, answer));
+ipcMain.on('ask-answer', (_evt, { key, answers }) => appState.resolveAskUserQuestion(key, answers));
+ipcMain.on('ask-skip', (_evt, { key }) => appState.skipAskUserQuestion(key));
 ipcMain.on('quit', () => app.quit());
 
 app.on('window-all-closed', () => { /* keep running in tray */ });

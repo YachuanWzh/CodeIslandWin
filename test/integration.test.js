@@ -32,6 +32,7 @@ function wire() {
     onEvent: (e) => appState.handleEvent(e),
     onPermission: (e) => appState.requestPermission(e),
     onQuestion: async (e) => { await appState.requestQuestion(e); return null; },
+    onAskUserQuestion: (e) => appState.requestAskUserQuestion(e),
   });
   return { pipe, appState, server };
 }
@@ -67,6 +68,36 @@ test('end-to-end: a permission request blocks until the UI decides, decision rea
     const { stdout } = await bridgeDone;
     const parsed = JSON.parse(stdout);
     assert.strictEqual(parsed.hookSpecificOutput.decision.behavior, 'allow');
+  } finally {
+    await server.stop();
+  }
+});
+
+test('end-to-end: an AskUserQuestion blocks until the user answers, answer reaches the bridge', async () => {
+  const { pipe, appState, server } = wire();
+  await server.start();
+  try {
+    const bridgeDone = runBridge(pipe, {
+      hook_event_name: 'PermissionRequest',
+      session_id: 's1',
+      tool_name: 'AskUserQuestion',
+      tool_input: { questions: [{ question: 'Pick a color', options: [{ label: 'Red' }, { label: 'Blue' }] }] },
+    });
+    // Poll until the question is pending, then answer it (simulating a click).
+    await new Promise((resolve) => {
+      const iv = setInterval(() => {
+        const pending = appState.listPending();
+        if (pending.length === 1 && pending[0].kind === 'askUserQuestion') {
+          clearInterval(iv);
+          appState.resolveAskUserQuestion(pending[0].key, { 'Pick a color': 'Blue' });
+          resolve();
+        }
+      }, 10);
+    });
+    const { stdout } = await bridgeDone;
+    const parsed = JSON.parse(stdout);
+    assert.strictEqual(parsed.hookSpecificOutput.decision.behavior, 'allow');
+    assert.deepStrictEqual(parsed.hookSpecificOutput.decision.updatedInput.answers, { 'Pick a color': 'Blue' });
   } finally {
     await server.stop();
   }
