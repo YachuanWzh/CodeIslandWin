@@ -85,6 +85,10 @@ html, body {
   gap: 6px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   -webkit-app-region: no-drag;
+  /* Cap to the viewport (window height is clamped to the screen in main) and
+     scroll internally so long content / many sessions stay reachable. */
+  max-height: calc(100vh - 70px);
+  overflow-y: auto;
 }
 
 .island:not(.collapsed) .panel { display: flex; }
@@ -113,8 +117,10 @@ html, body {
   color: var(--muted);
   white-space: pre-wrap;
   word-break: break-word;
-  max-height: 48px;
-  overflow: hidden;
+  /* Show a few lines inline; scroll within for long commands instead of
+     clipping them away unreachably. */
+  max-height: 120px;
+  overflow-y: auto;
 }
 
 .actions { display: flex; gap: 6px; margin-top: 4px; }
