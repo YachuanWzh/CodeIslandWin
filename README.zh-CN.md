@@ -51,10 +51,23 @@ npm start
 
 托盘图标可用于重新安装 / 卸载 hook，或退出程序。
 
+## 打包发布
+
+用 [electron-builder](https://www.electron.build/) 产出可双击运行的 Windows 安装包
+（最终用户无需开发环境）：
+
+```bash
+npm run pack      # 仅解包到 dist/（较快，用于冒烟测试）
+npm run dist      # 生成 NSIS 安装包 + 便携版 .exe 到 dist/
+```
+
+`npm run dist` 会生成 `CodeIsland Setup <版本>.exe` 安装包（可让用户自选安装目录）
+以及一个单文件便携版 `.exe`。
+
 ## 开发 / 测试
 
 ```bash
-npm test          # 48 个测试（node:test），覆盖全部非 GUI 核心逻辑
+npm test          # node:test 套件，覆盖全部非 GUI 核心逻辑
 ```
 
 核心逻辑均有单元测试 + 集成测试覆盖：

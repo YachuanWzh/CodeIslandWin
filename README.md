@@ -52,10 +52,23 @@ asks for permission, an **Allow / Deny** card appears in the island.
 
 The tray icon lets you re-install / uninstall hooks or quit.
 
+## Package a distributable
+
+To produce a double-clickable Windows build (no dev environment needed by the
+end user), use [electron-builder](https://www.electron.build/):
+
+```bash
+npm run pack      # unpacked app into dist/ (fast, for smoke-testing)
+npm run dist      # NSIS installer + portable .exe into dist/
+```
+
+`npm run dist` emits a `CodeIsland Setup <version>.exe` installer (lets the user
+pick an install location) and a portable single-file `.exe`.
+
 ## Develop / test
 
 ```bash
-npm test          # 48 tests (node:test) covering the whole non-GUI core
+npm test          # node:test suite covering the whole non-GUI core
 ```
 
 The core is fully unit + integration tested:
