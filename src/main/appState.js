@@ -1,6 +1,7 @@
 'use strict';
 
 const { reduceEvent, Status } = require('../core/sessionStore');
+const { parseQuestions, buildAllowResponse, buildDenyResponse } = require('../core/askQuestion');
 
 // Main-process application state: owns the session map, applies the pure
 // reducer, and brokers blocking permission/question requests between the
@@ -30,10 +31,19 @@ function createAppState() {
   function denyPendingForSession(sessionId) {
     for (const [key, entry] of pending) {
       if (entry.sessionId === sessionId) {
-        entry.resolve(entry.kind === 'permission' ? 'deny' : null);
+        entry.resolve(denyValueFor(entry.kind));
         pending.delete(key);
       }
     }
+  }
+
+  // The "abandon" value differs per pending kind: permission expects 'deny',
+  // AskUserQuestion expects a full PermissionRequest deny object, and a plain
+  // notification question expects null.
+  function denyValueFor(kind) {
+    if (kind === 'permission') return 'deny';
+    if (kind === 'askUserQuestion') return buildDenyResponse();
+    return null;
   }
 
   function handleEvent(event) {
@@ -81,6 +91,63 @@ function createAppState() {
     return promise;
   }
 
+  // AskUserQuestion (Claude Code's select/type tool). Parses the questions,
+  // blocks until the UI submits answers, and resolves with the full hook
+  // response object the server writes back. Empty question lists auto-allow so
+  // the agent is never wedged on a prompt with nothing to answer.
+  function requestAskUserQuestion(event) {
+    const sessionId = event.sessionId || 'default';
+    ensureSession(sessionId);
+    const questions = parseQuestions(event);
+
+    if (!questions.length) {
+      return Promise.resolve(buildAllowResponse(event, {}));
+    }
+
+    const s = sessions[sessionId];
+    s.status = Status.waitingQuestion;
+    s.toolDescription = questions[0].question || s.toolDescription;
+    s.lastActivity = Date.now();
+
+    const key = `ask-${++seq}`;
+    const promise = new Promise((resolve) => {
+      pending.set(key, { resolve, event, sessionId, kind: 'askUserQuestion', questions });
+    });
+    notify([{ type: 'playSound', event: 'PermissionRequest' }]);
+    return promise;
+  }
+
+  // answers: { [questionText]: answerString }. Multi-select answers are
+  // pre-joined by the UI before they reach here.
+  function resolveAskUserQuestion(key, answers) {
+    const entry = pending.get(key);
+    if (!entry) return false;
+    pending.delete(key);
+    clearWaitingQuestion(entry.sessionId);
+    entry.resolve(buildAllowResponse(entry.event, answers || {}));
+    notify();
+    return true;
+  }
+
+  function skipAskUserQuestion(key) {
+    const entry = pending.get(key);
+    if (!entry) return false;
+    pending.delete(key);
+    clearWaitingQuestion(entry.sessionId);
+    entry.resolve(buildDenyResponse());
+    notify();
+    return true;
+  }
+
+  function clearWaitingQuestion(sessionId) {
+    const s = sessions[sessionId];
+    if (s && s.status === Status.waitingQuestion && !hasPendingForSession(sessionId)) {
+      s.status = Status.processing;
+      s.currentTool = null;
+      s.toolDescription = null;
+    }
+  }
+
   function resolvePermission(key, behavior) {
     const entry = pending.get(key);
     if (!entry) return false;
@@ -122,6 +189,7 @@ function createAppState() {
       kind: e.kind,
       toolName: e.event.toolName || null,
       toolDescription: e.event.toolDescription || null,
+      questions: e.questions || null,
     }));
   }
 
@@ -141,8 +209,11 @@ function createAppState() {
     handleEvent,
     requestPermission,
     requestQuestion,
+    requestAskUserQuestion,
     resolvePermission,
     resolveQuestion,
+    resolveAskUserQuestion,
+    skipAskUserQuestion,
     listPending,
     cleanupIdle,
     subscribe(fn) { subscribers.add(fn); return () => subscribers.delete(fn); },

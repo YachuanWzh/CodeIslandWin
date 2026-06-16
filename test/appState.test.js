@@ -43,3 +43,62 @@ test('resolvePermission moves the session out of the waiting state', async () =>
   await p;
   assert.notStrictEqual(app.snapshot().sessions.s1.status, 'waitingApproval');
 });
+
+const askEv = (questions) => ev({
+  hook_event_name: 'PermissionRequest',
+  session_id: 's1',
+  tool_name: 'AskUserQuestion',
+  tool_input: { questions },
+});
+
+test('requestAskUserQuestion sets waitingQuestion and exposes the parsed questions', () => {
+  const app = createAppState();
+  app.requestAskUserQuestion(askEv([
+    { question: 'Pick a color', header: 'Color', options: [{ label: 'Red' }, { label: 'Blue' }] },
+  ]));
+  assert.strictEqual(app.snapshot().sessions.s1.status, 'waitingQuestion');
+  const pending = app.listPending();
+  assert.strictEqual(pending.length, 1);
+  assert.strictEqual(pending[0].kind, 'askUserQuestion');
+  assert.strictEqual(pending[0].questions.length, 1);
+  assert.strictEqual(pending[0].questions[0].question, 'Pick a color');
+  assert.deepStrictEqual(pending[0].questions[0].options.map((o) => o.label), ['Red', 'Blue']);
+});
+
+test('resolveAskUserQuestion replies with an allow + answers keyed by question text', async () => {
+  const app = createAppState();
+  const p = app.requestAskUserQuestion(askEv([
+    { question: 'Pick a color', options: [{ label: 'Red' }] },
+  ]));
+  const { key } = app.listPending()[0];
+  app.resolveAskUserQuestion(key, { 'Pick a color': 'Red' });
+  const resp = await p;
+  assert.strictEqual(resp.hookSpecificOutput.decision.behavior, 'allow');
+  assert.deepStrictEqual(resp.hookSpecificOutput.decision.updatedInput.answers, { 'Pick a color': 'Red' });
+  assert.strictEqual(app.listPending().length, 0);
+  assert.notStrictEqual(app.snapshot().sessions.s1.status, 'waitingQuestion');
+});
+
+test('skipAskUserQuestion replies with a deny', async () => {
+  const app = createAppState();
+  const p = app.requestAskUserQuestion(askEv([{ question: 'Pick', options: [{ label: 'A' }] }]));
+  const { key } = app.listPending()[0];
+  app.skipAskUserQuestion(key);
+  const resp = await p;
+  assert.strictEqual(resp.hookSpecificOutput.decision.behavior, 'deny');
+});
+
+test('requestAskUserQuestion with no questions auto-allows without blocking', async () => {
+  const app = createAppState();
+  const resp = await app.requestAskUserQuestion(askEv([]));
+  assert.strictEqual(resp.hookSpecificOutput.decision.behavior, 'allow');
+  assert.strictEqual(app.listPending().length, 0);
+});
+
+test('removing a session denies any pending AskUserQuestion', async () => {
+  const app = createAppState();
+  const p = app.requestAskUserQuestion(askEv([{ question: 'Pick', options: [{ label: 'A' }] }]));
+  app.handleEvent(ev({ hook_event_name: 'SessionEnd', session_id: 's1' }));
+  const resp = await p;
+  assert.strictEqual(resp.hookSpecificOutput.decision.behavior, 'deny');
+});
