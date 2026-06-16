@@ -77,10 +77,16 @@ function renderModel(state = {}) {
     });
 
   const top = rows[0];
-  const hasActive = rows.some((r) => r.statusKey !== 'idle');
+  // Quiet mode: the island only expands when a session needs a human decision —
+  // authorization (waitingApproval) or information input (waitingQuestion).
+  // Ordinary activity (running/processing/idle) is tracked silently and stays
+  // collapsed so the island isn't noisy.
+  const hasPending = rows.some(
+    (r) => r.statusKey === 'waitingApproval' || r.statusKey === 'waitingQuestion'
+  );
 
   return {
-    collapsed: !hasActive,
+    collapsed: !hasPending,
     count: rows.length,
     rows,
     mascotState: top ? mascotStateFor(top.statusKey) : 'idle',

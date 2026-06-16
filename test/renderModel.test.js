@@ -20,6 +20,18 @@ test('a session needing approval expands the island and is marked pending', () =
   assert.ok(/approv/i.test(m.rows[0].statusLabel));
 });
 
+test('quiet mode: running/processing activity does NOT expand the island', () => {
+  const running = renderModel({ sessions: { s1: { status: 'running', currentTool: 'Bash', cwd: 'C:/x', lastActivity: 1 } } });
+  assert.strictEqual(running.collapsed, true);
+  const processing = renderModel({ sessions: { s1: { status: 'processing', cwd: 'C:/x', lastActivity: 1 } } });
+  assert.strictEqual(processing.collapsed, true);
+});
+
+test('a session needing input (waitingQuestion) expands the island', () => {
+  const m = renderModel({ sessions: { s1: { status: 'waitingQuestion', cwd: 'C:/x', lastActivity: 1 } } });
+  assert.strictEqual(m.collapsed, false);
+});
+
 test('rows are ordered by status priority (waiting > running > processing > idle)', () => {
   const m = renderModel({
     sessions: {
