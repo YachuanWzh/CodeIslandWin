@@ -5,6 +5,7 @@ const path = require('node:path');
 const { createAppState } = require('./appState');
 const { createHookServer } = require('../server/hookServer');
 const { renderModel } = require('../renderer/renderModel');
+const { clampWindowHeight } = require('./windowLayout');
 const { pipePath } = require('../core/pipePath');
 const { installClaudeHooks, uninstallClaudeHooks } = require('../core/configInstaller');
 
@@ -23,9 +24,12 @@ function bridgePath() {
 function positionTopCenter(height) {
   if (!win) return;
   const display = screen.getPrimaryDisplay();
-  const { x, width } = display.workArea;
+  const { x, width, height: workHeight } = display.workArea;
   const winX = Math.round(x + (width - WIN_WIDTH) / 2);
-  win.setBounds({ x: winX, y: TOP_MARGIN, width: WIN_WIDTH, height: Math.max(1, Math.round(height)) });
+  // Never let the island grow past the bottom of the screen — clamp to the work
+  // area and let the panel scroll internally for content that doesn't fit.
+  const winHeight = clampWindowHeight(height, workHeight, { min: 1, topMargin: TOP_MARGIN });
+  win.setBounds({ x: winX, y: TOP_MARGIN, width: WIN_WIDTH, height: winHeight });
 }
 
 function createWindow() {
