@@ -1,5 +1,9 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Keep wheel/touch scrolling but hide the scrollbar chrome — the island looks
+   cleaner without a track running down the panel. */
+::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
 :root {
   --bg: #0b0c10;
   --bg-soft: #15171f;
@@ -14,6 +18,7 @@
 }
 
 html, body {
+  height: 100%;
   background: transparent;
   font-family: var(--font);
   color: var(--fg);
@@ -26,6 +31,7 @@ html, body {
   flex-direction: column;
   align-items: center;
   width: 100%;
+  height: 100%;
   padding: 4px 0;
 }
 
@@ -85,9 +91,12 @@ html, body {
   gap: 6px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   -webkit-app-region: no-drag;
-  /* Cap to the viewport (window height is clamped to the screen in main) and
-     scroll internally so long content / many sessions stay reachable. */
-  max-height: calc(100vh - 70px);
+  /* Fill whatever window height main grants (it clamps the content-driven resize
+     to the screen) and scroll internally for the overflow. min-height:0 lets this
+     flex item shrink below its content so the scrollbar engages. A viewport-unit
+     cap here would instead feed back into the resize loop and collapse the island. */
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
 }
 

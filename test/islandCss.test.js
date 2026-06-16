@@ -17,7 +17,19 @@ function ruleBody(selector) {
 test('the panel scrolls internally instead of clipping overflow', () => {
   const body = ruleBody('.panel {');
   assert.match(body, /overflow-y:\s*auto/, 'panel must scroll vertically');
-  assert.match(body, /max-height:/, 'panel must have a max-height to scroll within');
+  // The panel must fill the remaining window via flex (min-height:0 lets a flex
+  // item shrink below content so overflow scrolls) rather than capping itself to
+  // 100vh — a 100vh cap feeds back into the content-driven window resize and
+  // collapses the island to nothing.
+  assert.match(body, /min-height:\s*0/, 'panel must allow flex shrink to scroll');
+  assert.doesNotMatch(body, /100vh/, 'panel must not cap to viewport height (feedback loop)');
+});
+
+test('scrollable areas hide the scrollbar but stay scrollable', () => {
+  // The panel/row-desc still scroll (overflow-y:auto asserted elsewhere); the
+  // scrollbar chrome itself is hidden for a cleaner island.
+  const bar = ruleBody('::-webkit-scrollbar {');
+  assert.match(bar, /display:\s*none/, 'webkit scrollbar must be hidden');
 });
 
 test('row-desc no longer hard-clips long command text', () => {

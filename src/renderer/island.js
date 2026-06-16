@@ -236,9 +236,17 @@ function render({ model, pending, sounds }) {
     panelEl.appendChild(div);
   }
 
-  // Ask main to fit the window to content.
+  // Ask main to fit the window to content. The island now fills the window
+  // (height:100%) so its layout box equals the current window height, not the
+  // natural content height — measure the pieces directly instead. The panel's
+  // scrollHeight is the full, uncapped content height regardless of how tall the
+  // panel's own (flex/clamped) box is, so this can't feed back on the window size.
   requestAnimationFrame(() => {
-    const h = Math.ceil(islandEl.getBoundingClientRect().height) + 8;
+    const pillH = Math.ceil(pillEl.getBoundingClientRect().height);
+    let h = pillH + 8 /* island top+bottom padding */ + 4 /* buffer */;
+    if (!islandEl.classList.contains('collapsed')) {
+      h += 6 /* gap above panel */ + panelEl.scrollHeight;
+    }
     window.codeisland.resize(h);
   });
 }
