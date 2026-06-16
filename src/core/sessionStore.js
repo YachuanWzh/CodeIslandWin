@@ -82,7 +82,6 @@ function reduceEvent(sessions, event) {
 
   if (eventName === 'SessionEnd') {
     effects.push({ type: 'removeSession', sessionId });
-    effects.push({ type: 'playSound', event: eventName });
     return { effects };
   }
 
@@ -178,7 +177,10 @@ function reduceEvent(sessions, event) {
   }
 
   session.lastActivity = Date.now();
-  effects.push({ type: 'playSound', event: eventName });
+  // Quiet mode: ordinary events do not emit sounds. Only blocking events that
+  // require a human decision (permission, AskUserQuestion, notification question)
+  // play a sound — emitted by appState.requestPermission / requestAskUserQuestion /
+  // requestQuestion, not here.
   return { effects };
 }
 

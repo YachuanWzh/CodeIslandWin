@@ -65,10 +65,12 @@ test('SessionEnd emits removeSession effect', () => {
   assert.ok(effects.some(e => e.type === 'removeSession' && e.sessionId === 's1'));
 });
 
-test('every event emits a playSound effect carrying the normalized name', () => {
-  const sessions = {};
-  const { effects } = reduceEvent(sessions, ev({ hook_event_name: 'pre_tool_use', session_id: 's1', tool_name: 'Bash', tool_input: { command: 'x' } }));
-  assert.ok(effects.some(e => e.type === 'playSound' && e.event === 'PreToolUse'));
+test('ordinary (non-blocking) events emit no playSound effect (quiet mode)', () => {
+  for (const name of ['pre_tool_use', 'post_tool_use', 'Stop', 'SessionStart', 'UserPromptSubmit', 'SessionEnd']) {
+    const sessions = {};
+    const { effects } = reduceEvent(sessions, ev({ hook_event_name: name, session_id: 's1', tool_name: 'Bash', tool_input: { command: 'x' } }));
+    assert.ok(!effects.some(e => e.type === 'playSound'), `${name} must not emit playSound`);
+  }
 });
 
 test('waiting status is preserved against activity events', () => {
