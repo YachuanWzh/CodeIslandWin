@@ -89,7 +89,9 @@ function renderModel(state = {}) {
     collapsed: !hasPending,
     count: rows.length,
     rows,
-    mascotState: top ? mascotStateFor(top.statusKey) : 'idle',
+    // Quiet mode: keep the always-visible pill neutral until a decision is
+    // pending, so background activity does not light it up.
+    mascotState: hasPending && top ? mascotStateFor(top.statusKey) : 'idle',
   };
 }
 

@@ -55,6 +55,11 @@ test('running status surfaces the current tool', () => {
   assert.strictEqual(m.rows[0].toolDescription, 'npm test');
 });
 
+test('quiet mode: mascotState stays idle while only background activity is present', () => {
+  const m = renderModel({ sessions: { s1: { status: 'running', currentTool: 'Bash', cwd: 'C:/x', lastActivity: 1 } } });
+  assert.strictEqual(m.mascotState, 'idle');
+});
+
 test('mascotState reflects the top (most urgent) session', () => {
   const m = renderModel({
     sessions: {

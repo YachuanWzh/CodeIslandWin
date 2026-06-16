@@ -190,7 +190,9 @@ function render({ model, pending, sounds }) {
   // Pill
   islandEl.classList.toggle('collapsed', model.collapsed);
   pillEl.className = `pill state-${model.mascotState}`;
-  pillCountEl.textContent = model.count > 0 ? String(model.count) : '';
+  // Quiet mode: only surface the session count while the island is expanded for a
+  // pending decision — no badge churn during background activity.
+  pillCountEl.textContent = !model.collapsed && model.count > 0 ? String(model.count) : '';
 
   const top = model.rows[0];
   if (model.collapsed || !top) {
