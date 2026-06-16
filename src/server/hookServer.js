@@ -18,7 +18,10 @@ function permissionResponse(behavior) {
 
 function routeKind(event) {
   const name = normalize(event.eventName);
-  if (name === 'PermissionRequest') return 'permission';
+  if (name === 'PermissionRequest') {
+    // AskUserQuestion is information input (select/type), not a yes/no approval.
+    return event.toolName === 'AskUserQuestion' ? 'askUserQuestion' : 'permission';
+  }
   if (name === 'Notification' && typeof event.rawJSON.question === 'string') return 'question';
   return 'event';
 }
@@ -31,7 +34,8 @@ function routeKind(event) {
 // onEvent(event)            -> void           (fire-and-forget UI update)
 // onPermission(event)       -> Promise<'allow'|'deny'>
 // onQuestion(event)         -> Promise<object|null>  (raw hook response object, or null to skip)
-function createHookServer({ pipe = pipePath(), onEvent, onPermission, onQuestion } = {}) {
+// onAskUserQuestion(event)  -> Promise<object>       (full hook response object: allow+answers or deny)
+function createHookServer({ pipe = pipePath(), onEvent, onPermission, onQuestion, onAskUserQuestion } = {}) {
   // Windows named pipes do not support TCP-style half-close, so we frame the
   // request with a trailing newline instead of relying on the peer's FIN: the
   // bridge writes `JSON\n` and waits, we read up to the newline, then reply and
@@ -71,6 +75,11 @@ function createHookServer({ pipe = pipePath(), onEvent, onPermission, onQuestion
         case 'permission': {
           const behavior = (await onPermission(event)) === 'deny' ? 'deny' : 'allow';
           safeEnd(socket, permissionResponse(behavior));
+          break;
+        }
+        case 'askUserQuestion': {
+          const response = await onAskUserQuestion(event);
+          safeEnd(socket, response ? JSON.stringify(response) : permissionResponse('deny'));
           break;
         }
         case 'question': {

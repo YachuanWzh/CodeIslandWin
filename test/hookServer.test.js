@@ -1,7 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 const net = require('node:net');
-const { createHookServer } = require('../src/server/hookServer');
+const { createHookServer, routeKind } = require('../src/server/hookServer');
 
 function uniquePipe() {
   return `\\\\.\\pipe\\codeisland-test-${process.pid}-${Math.random().toString(36).slice(2)}`;
@@ -76,6 +76,48 @@ test('permission resolution can be deferred until a later user action', async ()
     setTimeout(() => resolveDecision('allow'), 50);
     const parsed = JSON.parse(await respPromise);
     assert.strictEqual(parsed.hookSpecificOutput.decision.behavior, 'allow');
+  } finally {
+    await server.stop();
+  }
+});
+
+test('routeKind classifies an AskUserQuestion permission request as askUserQuestion', () => {
+  const askEvent = { eventName: 'PermissionRequest', toolName: 'AskUserQuestion', rawJSON: {} };
+  assert.strictEqual(routeKind(askEvent), 'askUserQuestion');
+  const permEvent = { eventName: 'PermissionRequest', toolName: 'Bash', rawJSON: {} };
+  assert.strictEqual(routeKind(permEvent), 'permission');
+});
+
+test('AskUserQuestion request is routed to onAskUserQuestion and its object is written back', async () => {
+  const pipe = uniquePipe();
+  let seen = null;
+  const server = createHookServer({
+    pipe,
+    onEvent: () => {},
+    onPermission: async () => 'allow',
+    onQuestion: async () => null,
+    onAskUserQuestion: async (e) => {
+      seen = e;
+      return {
+        hookSpecificOutput: {
+          hookEventName: 'PermissionRequest',
+          decision: { behavior: 'allow', updatedInput: { answers: { Q: 'A' } } },
+        },
+      };
+    },
+  });
+  await server.start();
+  try {
+    const resp = await sendOverPipe(pipe, {
+      hook_event_name: 'PermissionRequest',
+      session_id: 's1',
+      tool_name: 'AskUserQuestion',
+      tool_input: { questions: [{ question: 'Q', options: [{ label: 'A' }] }] },
+    });
+    const parsed = JSON.parse(resp);
+    assert.strictEqual(seen.toolName, 'AskUserQuestion');
+    assert.strictEqual(parsed.hookSpecificOutput.decision.behavior, 'allow');
+    assert.deepStrictEqual(parsed.hookSpecificOutput.decision.updatedInput.answers, { Q: 'A' });
   } finally {
     await server.stop();
   }
