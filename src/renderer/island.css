@@ -45,9 +45,10 @@ html, body {
   border-radius: 999px;
   padding: 6px 14px 6px 8px;
   box-shadow: 0 6px 24px rgba(0,0,0,0.45);
-  -webkit-app-region: drag;
+  cursor: grab;
   transition: background 0.2s ease;
 }
+.pill:active { cursor: grabbing; }
 
 .pill.state-waiting { border-color: var(--warn); box-shadow: 0 0 18px rgba(251,191,36,0.35); }
 /* Active work (running/processing) glows green so the "jumping little person"
@@ -105,7 +106,6 @@ html, body {
   flex-direction: column;
   gap: 6px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  -webkit-app-region: no-drag;
   /* Fill whatever window height main grants (it clamps the content-driven resize
      to the screen) and scroll internally for the overflow. min-height:0 lets this
      flex item shrink below its content so the scrollbar engages. A viewport-unit
@@ -157,8 +157,6 @@ html, body {
   padding: 6px 8px;
   cursor: pointer;
   color: var(--bg);
-  /* Stay clickable rather than dragging the window when pressed. */
-  -webkit-app-region: no-drag;
 }
 .btn-allow { background: var(--accent); }
 /* "Allow all" is a softer, outlined green to read as a broader, stickier choice
@@ -187,7 +185,6 @@ html, body {
   border-radius: 8px;
   padding: 6px 8px;
   cursor: pointer;
-  -webkit-app-region: no-drag;
 }
 .opt:hover { border-color: #3a3f4f; }
 .opt.selected { border-color: var(--accent); background: rgba(110,231,183,0.08); }
@@ -206,6 +203,5 @@ html, body {
   padding: 6px 8px;
   margin-top: 2px;
   outline: none;
-  -webkit-app-region: no-drag;
 }
 .q-input:focus { border-color: var(--accent); }

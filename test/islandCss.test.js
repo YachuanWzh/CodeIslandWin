@@ -42,19 +42,11 @@ test('the mascot jumps with a green glow while Claude is actively working', () =
   assert.match(greenGlow, /var\(--accent\)/, 'working pill states must use the green accent');
 });
 
-test('the pill is a drag handle so the island can be moved by it', () => {
-  const body = ruleBody('.pill {');
-  assert.match(body, /-webkit-app-region:\s*drag/, 'pill must be a drag region');
-});
-
-test('interactive controls stay clickable (no-drag) inside the draggable island', () => {
-  // The panel and the controls within it must opt out of the drag region, or the
-  // buttons/options/inputs would just drag the window instead of registering a
-  // click.
-  assert.match(ruleBody('.panel {'), /-webkit-app-region:\s*no-drag/, 'panel must be no-drag');
-  assert.match(ruleBody('.btn {'), /-webkit-app-region:\s*no-drag/, 'buttons must be no-drag');
-  assert.match(ruleBody('.opt {'), /-webkit-app-region:\s*no-drag/, 'options must be no-drag');
-  assert.match(ruleBody('.q-input {'), /-webkit-app-region:\s*no-drag/, 'inputs must be no-drag');
+test('the pill no longer uses an OS drag region (it swallows the recenter dblclick)', () => {
+  // Moving is done by a manual JS drag (see dragReset.test) so mouse events —
+  // notably the recenter dblclick — keep reaching the renderer.
+  assert.doesNotMatch(css, /-webkit-app-region/, 'no -webkit-app-region should remain');
+  assert.match(ruleBody('.pill {'), /cursor:\s*(grab|move)/, 'pill should hint it is draggable');
 });
 
 test('row-desc no longer hard-clips long command text', () => {

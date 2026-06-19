@@ -260,6 +260,31 @@ function render({ model, pending, sounds }) {
   });
 }
 
+// Manual drag by the pill. A CSS -webkit-app-region:drag region would move the
+// window natively but swallows mouse events at the OS level, so the recenter
+// dblclick below would never fire. Instead we track the cursor ourselves:
+// window.screenX/Y is the window's current top-left in screen coordinates, and
+// the cursor's screenX/Y delta from mousedown tells us how far to move it.
+let dragStart = null; // { mouseX, mouseY, winX, winY }
+
+pillEl.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return; // left button only
+  dragStart = { mouseX: e.screenX, mouseY: e.screenY, winX: window.screenX, winY: window.screenY };
+  e.preventDefault();
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!dragStart) return;
+  // If the button was released off-window (a fast drag can outrun the window and
+  // miss the mouseup), stop dragging instead of sticking to the cursor.
+  if ((e.buttons & 1) === 0) { dragStart = null; return; }
+  const x = dragStart.winX + (e.screenX - dragStart.mouseX);
+  const y = dragStart.winY + (e.screenY - dragStart.mouseY);
+  window.codeisland.moveWindow(x, y);
+});
+
+window.addEventListener('mouseup', () => { dragStart = null; });
+
 // Double-click the pill to bring a dragged island back to its top-center home.
 pillEl.addEventListener('dblclick', () => window.codeisland.resetPosition());
 

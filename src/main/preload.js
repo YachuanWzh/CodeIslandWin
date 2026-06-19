@@ -5,6 +5,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('codeisland', {
   onState: (cb) => ipcRenderer.on('state-update', (_e, payload) => cb(payload)),
   resize: (height) => ipcRenderer.send('resize', height),
+  moveWindow: (x, y) => ipcRenderer.send('move-window', { x, y }),
   resetPosition: () => ipcRenderer.send('reset-position'),
   decide: (key, behavior) => ipcRenderer.send('permission-decision', { key, behavior }),
   answer: (key, answer) => ipcRenderer.send('question-answer', { key, answer }),

@@ -137,6 +137,13 @@ app.whenReady().then(async () => {
 });
 
 ipcMain.on('resize', (_evt, height) => positionWindow(height));
+// Manual drag from the renderer: remember the new top-left and apply it (height
+// stays whatever the content currently needs).
+ipcMain.on('move-window', (_evt, { x, y }) => {
+  if (!win || win.isDestroyed()) return;
+  userPosition = { x: Math.round(x), y: Math.round(y) };
+  positionWindow(win.getBounds().height);
+});
 // Double-click on the pill: forget the dragged position and snap back to the
 // default top-center spot, keeping the current height.
 ipcMain.on('reset-position', () => {
