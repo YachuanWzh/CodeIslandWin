@@ -4,3 +4,7 @@ dist/
 # superharness ralph runtime state (per-task tracking + retry)
 .claude/
 CLAUDE.md
+# superharness ralph runtime state (per-task tracking + retry)
+.claude/superharness/ralph/
+# superharness brainstorm mind-map session state (transient)
+.claude/superharness/brainstorm/
