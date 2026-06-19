@@ -7,11 +7,41 @@ const { pipePath } = require('../core/pipePath');
 
 const MAX_PAYLOAD = 1024 * 1024; // 1MB, matches macOS HookServer.
 
-function permissionResponse(behavior) {
+// Build the persisted "always allow" rule for a tool, mirroring the macOS app:
+// non-MCP tools (Bash/Read/Edit/…) take a `*` specifier so any invocation
+// matches; MCP tools (`mcp__server__tool`) must use the bare tool name — sending
+// `ruleContent: "*"` makes Claude Code assemble `mcp__server__tool(*)`, which
+// never matches a real MCP call, so the rule silently fails to persist.
+function alwaysAllowRule(toolName) {
+  const rule = { toolName: toolName || '' };
+  if (!String(toolName || '').startsWith('mcp__')) rule.ruleContent = '*';
+  return rule;
+}
+
+// `decision` is the resolved value from onPermission: 'deny', 'allow', or
+// 'allowAll'. 'allowAll' allows the current call and adds a session-scoped rule
+// so every later same-tool call is auto-approved without re-prompting.
+function permissionResponse(decision, event) {
+  let dec;
+  if (decision === 'deny') {
+    dec = { behavior: 'deny' };
+  } else if (decision === 'allowAll') {
+    dec = {
+      behavior: 'allow',
+      updatedPermissions: [{
+        type: 'addRules',
+        rules: [alwaysAllowRule(event && event.toolName)],
+        behavior: 'allow',
+        destination: 'session',
+      }],
+    };
+  } else {
+    dec = { behavior: 'allow' };
+  }
   return JSON.stringify({
     hookSpecificOutput: {
       hookEventName: 'PermissionRequest',
-      decision: { behavior },
+      decision: dec,
     },
   });
 }
@@ -73,8 +103,8 @@ function createHookServer({ pipe = pipePath(), onEvent, onPermission, onQuestion
     try {
       switch (routeKind(event)) {
         case 'permission': {
-          const behavior = (await onPermission(event)) === 'deny' ? 'deny' : 'allow';
-          safeEnd(socket, permissionResponse(behavior));
+          const decision = await onPermission(event);
+          safeEnd(socket, permissionResponse(decision, event));
           break;
         }
         case 'askUserQuestion': {

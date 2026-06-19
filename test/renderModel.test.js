@@ -55,9 +55,17 @@ test('running status surfaces the current tool', () => {
   assert.strictEqual(m.rows[0].toolDescription, 'npm test');
 });
 
-test('quiet mode: mascotState stays idle while only background activity is present', () => {
-  const m = renderModel({ sessions: { s1: { status: 'running', currentTool: 'Bash', cwd: 'C:/x', lastActivity: 1 } } });
-  assert.strictEqual(m.mascotState, 'idle');
+test('quiet mode keeps the panel collapsed during background activity but the mascot still animates', () => {
+  // The island must not expand for ordinary running/processing work (no pending
+  // decision), yet the always-visible pill should show the mascot bouncing so the
+  // user sees Claude is actively working — not idle. (#green-bouncing-mascot)
+  const running = renderModel({ sessions: { s1: { status: 'running', currentTool: 'Bash', cwd: 'C:/x', lastActivity: 1 } } });
+  assert.strictEqual(running.collapsed, true, 'panel stays collapsed for background activity');
+  assert.strictEqual(running.mascotState, 'running', 'mascot reflects the running work so it bounces');
+
+  const processing = renderModel({ sessions: { s1: { status: 'processing', cwd: 'C:/x', lastActivity: 1 } } });
+  assert.strictEqual(processing.collapsed, true);
+  assert.strictEqual(processing.mascotState, 'processing');
 });
 
 test('mascotState reflects the top (most urgent) session', () => {

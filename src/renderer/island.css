@@ -50,8 +50,10 @@ html, body {
 }
 
 .pill.state-waiting { border-color: var(--warn); box-shadow: 0 0 18px rgba(251,191,36,0.35); }
-.pill.state-running { border-color: var(--running); }
-.pill.state-processing { border-color: #2b2f3c; }
+/* Active work (running/processing) glows green so the "jumping little person"
+   reads as Claude busy at a task, even while the panel stays collapsed. */
+.pill.state-running { border-color: var(--accent); box-shadow: 0 0 16px rgba(110,231,183,0.4); }
+.pill.state-processing { border-color: var(--accent); box-shadow: 0 0 10px rgba(110,231,183,0.22); }
 
 .mascot {
   width: 22px;
@@ -60,10 +62,23 @@ html, body {
   animation: bob 1.4s ease-in-out infinite;
 }
 .pill.state-idle .mascot { animation: none; opacity: 0.7; }
+/* While working, the mascot jumps energetically with a green glow. */
+.pill.state-running .mascot,
+.pill.state-processing .mascot {
+  animation: jump 0.6s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px var(--accent));
+}
 
 @keyframes bob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-2px); }
+}
+
+@keyframes jump {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  20% { transform: translateY(0) scaleY(0.9); }
+  50% { transform: translateY(-5px) scaleY(1.05); }
+  80% { transform: translateY(0) scaleY(0.95); }
 }
 
 .pill-status { font-size: 12px; letter-spacing: 0.2px; white-space: nowrap; }
@@ -144,6 +159,13 @@ html, body {
   color: var(--bg);
 }
 .btn-allow { background: var(--accent); }
+/* "Allow all" is a softer, outlined green to read as a broader, stickier choice
+   than the plain one-shot Allow. */
+.btn-allow-all {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
 .btn-deny { background: var(--danger); }
 .btn-skip { background: #2b2f3c; color: var(--fg); }
 .btn-submit { background: var(--accent); }

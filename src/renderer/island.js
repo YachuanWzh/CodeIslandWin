@@ -222,11 +222,20 @@ function render({ model, pending, sounds }) {
       allow.className = 'btn btn-allow';
       allow.textContent = 'Allow';
       allow.onclick = () => window.codeisland.decide(pend.key, 'allow');
+      // "Allow all" approves this call and persists a session rule so every later
+      // call to the same tool is auto-approved without re-prompting.
+      const allowAll = document.createElement('button');
+      allowAll.className = 'btn btn-allow-all';
+      allowAll.textContent = 'Allow all';
+      allowAll.title = pend.toolName
+        ? `Always allow ${pend.toolName} for this session`
+        : 'Always allow this tool for this session';
+      allowAll.onclick = () => window.codeisland.decide(pend.key, 'allowAll');
       const deny = document.createElement('button');
       deny.className = 'btn btn-deny';
       deny.textContent = 'Deny';
       deny.onclick = () => window.codeisland.decide(pend.key, 'deny');
-      actions.append(allow, deny);
+      actions.append(allow, allowAll, deny);
       div.appendChild(actions);
     } else if (pend && pend.kind === 'askUserQuestion' && pend.questions) {
       // onChanged re-renders from the cached state so selection changes (and the

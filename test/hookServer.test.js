@@ -81,6 +81,48 @@ test('permission resolution can be deferred until a later user action', async ()
   }
 });
 
+test('allowAll resolves to allow plus a session addRules rule for the tool', async () => {
+  const pipe = uniquePipe();
+  const server = createHookServer({
+    pipe,
+    onEvent: () => {},
+    onPermission: async () => 'allowAll',
+    onQuestion: async () => null,
+  });
+  await server.start();
+  try {
+    const resp = await sendOverPipe(pipe, { hook_event_name: 'PermissionRequest', session_id: 's1', tool_name: 'Bash', tool_use_id: 'tu1' });
+    const decision = JSON.parse(resp).hookSpecificOutput.decision;
+    assert.strictEqual(decision.behavior, 'allow');
+    const update = decision.updatedPermissions[0];
+    assert.strictEqual(update.type, 'addRules');
+    assert.strictEqual(update.behavior, 'allow');
+    assert.strictEqual(update.destination, 'session');
+    assert.deepStrictEqual(update.rules, [{ toolName: 'Bash', ruleContent: '*' }]);
+  } finally {
+    await server.stop();
+  }
+});
+
+test('allowAll for an MCP tool omits ruleContent (bare tool name only)', async () => {
+  const pipe = uniquePipe();
+  const server = createHookServer({
+    pipe,
+    onEvent: () => {},
+    onPermission: async () => 'allowAll',
+    onQuestion: async () => null,
+  });
+  await server.start();
+  try {
+    const resp = await sendOverPipe(pipe, { hook_event_name: 'PermissionRequest', session_id: 's1', tool_name: 'mcp__github__create_issue', tool_use_id: 'tu1' });
+    const decision = JSON.parse(resp).hookSpecificOutput.decision;
+    assert.strictEqual(decision.behavior, 'allow');
+    assert.deepStrictEqual(decision.updatedPermissions[0].rules, [{ toolName: 'mcp__github__create_issue' }]);
+  } finally {
+    await server.stop();
+  }
+});
+
 test('routeKind classifies an AskUserQuestion permission request as askUserQuestion', () => {
   const askEvent = { eventName: 'PermissionRequest', toolName: 'AskUserQuestion', rawJSON: {} };
   assert.strictEqual(routeKind(askEvent), 'askUserQuestion');

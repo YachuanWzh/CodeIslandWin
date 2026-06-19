@@ -32,6 +32,16 @@ test('scrollable areas hide the scrollbar but stay scrollable', () => {
   assert.match(bar, /display:\s*none/, 'webkit scrollbar must be hidden');
 });
 
+test('the mascot jumps with a green glow while Claude is actively working', () => {
+  // Background activity (running/processing) drives a green, energetic "jumping
+  // little person" so the user sees work in progress without the panel expanding.
+  const running = ruleBody('.pill.state-running .mascot');
+  assert.match(running, /animation:\s*jump/, 'running mascot must use the jump animation');
+  assert.ok(/@keyframes jump/.test(css), 'a jump keyframe must be defined');
+  const greenGlow = ruleBody('.pill.state-running {') + ruleBody('.pill.state-processing {');
+  assert.match(greenGlow, /var\(--accent\)/, 'working pill states must use the green accent');
+});
+
 test('row-desc no longer hard-clips long command text', () => {
   const body = ruleBody('.row-desc {');
   assert.doesNotMatch(body, /overflow:\s*hidden/, 'row-desc must not clip with overflow:hidden');

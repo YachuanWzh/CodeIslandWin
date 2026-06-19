@@ -159,7 +159,12 @@ function createAppState() {
       s.currentTool = null;
       s.toolDescription = null;
     }
-    entry.resolve(behavior === 'deny' ? 'deny' : 'allow');
+    // Pass the decision through verbatim: 'deny', 'allow', or 'allowAll' (allow
+    // this call and persist a same-tool session rule). The hook server turns it
+    // into the right PermissionRequest response. Anything unexpected falls back
+    // to a plain allow.
+    const decision = behavior === 'deny' || behavior === 'allowAll' ? behavior : 'allow';
+    entry.resolve(decision);
     notify();
     return true;
   }

@@ -89,9 +89,11 @@ function renderModel(state = {}) {
     collapsed: !hasPending,
     count: rows.length,
     rows,
-    // Quiet mode: keep the always-visible pill neutral until a decision is
-    // pending, so background activity does not light it up.
-    mascotState: hasPending && top ? mascotStateFor(top.statusKey) : 'idle',
+    // Quiet mode collapses the panel until a decision is pending, but the
+    // always-visible pill still reflects the top session's status so the mascot
+    // bounces (green "jumping little person") whenever Claude is actively working
+    // — running/processing — not only when waiting for the user.
+    mascotState: top ? mascotStateFor(top.statusKey) : 'idle',
   };
 }
 

@@ -35,6 +35,16 @@ test('requestPermission resolves when the user decides, and clears pending', asy
   assert.strictEqual(app.listPending().length, 0);
 });
 
+test('resolvePermission passes the allowAll decision through to the hook server', async () => {
+  const app = createAppState();
+  const p = app.requestPermission(ev({ hook_event_name: 'PermissionRequest', session_id: 's1', tool_name: 'Bash', tool_use_id: 'tu1' }));
+  const { key } = app.listPending()[0];
+  app.resolvePermission(key, 'allowAll');
+  assert.strictEqual(await p, 'allowAll');
+  assert.strictEqual(app.listPending().length, 0);
+  assert.notStrictEqual(app.snapshot().sessions.s1.status, 'waitingApproval');
+});
+
 test('resolvePermission moves the session out of the waiting state', async () => {
   const app = createAppState();
   const p = app.requestPermission(ev({ hook_event_name: 'PermissionRequest', session_id: 's1', tool_name: 'Write', tool_use_id: 'tu2' }));
