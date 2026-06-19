@@ -1,6 +1,8 @@
 node_modules
 # electron-builder output
 dist/
+# packaged portable exe (kept in project but not committed)
+release/
 # superharness ralph runtime state (per-task tracking + retry)
 .claude/
 CLAUDE.md

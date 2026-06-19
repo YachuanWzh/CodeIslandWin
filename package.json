@@ -8,7 +8,8 @@
     "start": "electron .",
     "bridge": "node src/bridge/bridge.js",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder --win"
+    "dist": "electron-builder --win",
+    "exe": "electron-builder --win portable"
   },
   "license": "MIT",
   "devDependencies": {
@@ -23,14 +24,16 @@
       "!**/*.test.js"
     ],
     "directories": {
-      "output": "dist"
+      "output": "release"
     },
     "win": {
       "target": [
-        "nsis",
         "portable"
       ],
       "icon": "src/assets/claude.png"
+    },
+    "portable": {
+      "artifactName": "CodeIsland.exe"
     },
     "nsis": {
       "oneClick": false,
