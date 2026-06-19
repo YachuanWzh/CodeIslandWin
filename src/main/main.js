@@ -5,7 +5,7 @@ const path = require('node:path');
 const { createAppState } = require('./appState');
 const { createHookServer } = require('../server/hookServer');
 const { renderModel } = require('../renderer/renderModel');
-const { clampWindowHeight } = require('./windowLayout');
+const { computeWindowBounds } = require('./windowLayout');
 const { pipePath } = require('../core/pipePath');
 const { installClaudeHooks, uninstallClaudeHooks } = require('../core/configInstaller');
 
@@ -17,19 +17,32 @@ let tray = null;
 let server = null;
 const appState = createAppState();
 
+// Where the user last dragged the island to. `null` means "use the default
+// top-center spot". Once set, positionWindow keeps these coordinates so the
+// content-driven resizes stop snapping the island back to center.
+let userPosition = null;
+// The bounds we last applied programmatically, so the `moved` handler can tell
+// our own setBounds apart from a real user drag (timing-independent).
+let lastSetBounds = null;
+
 function bridgePath() {
   return path.join(__dirname, '..', 'bridge', 'bridge.js');
 }
 
-function positionTopCenter(height) {
+function positionWindow(height) {
   if (!win) return;
   const display = screen.getPrimaryDisplay();
-  const { x, width, height: workHeight } = display.workArea;
-  const winX = Math.round(x + (width - WIN_WIDTH) / 2);
   // Never let the island grow past the bottom of the screen — clamp to the work
   // area and let the panel scroll internally for content that doesn't fit.
-  const winHeight = clampWindowHeight(height, workHeight, { min: 1, topMargin: TOP_MARGIN });
-  win.setBounds({ x: winX, y: TOP_MARGIN, width: WIN_WIDTH, height: winHeight });
+  const bounds = computeWindowBounds(height, {
+    workArea: display.workArea,
+    width: WIN_WIDTH,
+    topMargin: TOP_MARGIN,
+    min: 1,
+    userPosition,
+  });
+  lastSetBounds = bounds;
+  win.setBounds(bounds);
 }
 
 function createWindow() {
@@ -39,7 +52,9 @@ function createWindow() {
     frame: false,
     transparent: true,
     resizable: false,
-    movable: false,
+    // Movable so the OS honors the pill's -webkit-app-region: drag region —
+    // without this the drag region is inert and the island can't be moved.
+    movable: true,
     skipTaskbar: true,
     alwaysOnTop: true,
     hasShadow: false,
@@ -53,7 +68,18 @@ function createWindow() {
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
-  positionTopCenter(56);
+
+  // Remember where the user drags the island to. A move whose final position
+  // matches the bounds we set programmatically is our own resize, not a drag —
+  // ignore those so a content-driven resize can't masquerade as a user move.
+  win.on('moved', () => {
+    if (!win || win.isDestroyed()) return;
+    const { x, y } = win.getBounds();
+    if (lastSetBounds && x === lastSetBounds.x && y === lastSetBounds.y) return;
+    userPosition = { x, y };
+  });
+
+  positionWindow(56);
 }
 
 function pushState(effects = []) {
@@ -110,7 +136,7 @@ app.whenReady().then(async () => {
   setInterval(() => appState.cleanupIdle(), 30 * 1000);
 });
 
-ipcMain.on('resize', (_evt, height) => positionTopCenter(height));
+ipcMain.on('resize', (_evt, height) => positionWindow(height));
 ipcMain.on('permission-decision', (_evt, { key, behavior }) => appState.resolvePermission(key, behavior));
 ipcMain.on('question-answer', (_evt, { key, answer }) => appState.resolveQuestion(key, answer));
 ipcMain.on('ask-answer', (_evt, { key, answers }) => appState.resolveAskUserQuestion(key, answers));

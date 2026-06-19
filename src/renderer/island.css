@@ -157,6 +157,8 @@ html, body {
   padding: 6px 8px;
   cursor: pointer;
   color: var(--bg);
+  /* Stay clickable rather than dragging the window when pressed. */
+  -webkit-app-region: no-drag;
 }
 .btn-allow { background: var(--accent); }
 /* "Allow all" is a softer, outlined green to read as a broader, stickier choice
