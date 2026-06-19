@@ -11,4 +11,23 @@ function clampWindowHeight(requested, available, { min = 1, topMargin = 0 } = {}
   return Math.round(bounded);
 }
 
-module.exports = { clampWindowHeight };
+// Compute the window's on-screen bounds for a renderer-requested content height.
+// Default placement is top-centered (the island's resting spot). Once the user
+// drags the window, `userPosition` carries the released {x, y}: we keep those
+// coordinates and only re-clamp the height, so content-driven resizes no longer
+// snap the island back to center.
+function computeWindowBounds(requestedHeight, { workArea, width, topMargin = 0, min = 1, userPosition = null } = {}) {
+  const height = clampWindowHeight(requestedHeight, workArea.height, { min, topMargin });
+  let x;
+  let y;
+  if (userPosition) {
+    x = Math.round(userPosition.x);
+    y = Math.round(userPosition.y);
+  } else {
+    x = Math.round(workArea.x + (workArea.width - width) / 2);
+    y = topMargin;
+  }
+  return { x, y, width, height };
+}
+
+module.exports = { clampWindowHeight, computeWindowBounds };
