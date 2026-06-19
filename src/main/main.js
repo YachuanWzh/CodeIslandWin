@@ -137,6 +137,13 @@ app.whenReady().then(async () => {
 });
 
 ipcMain.on('resize', (_evt, height) => positionWindow(height));
+// Double-click on the pill: forget the dragged position and snap back to the
+// default top-center spot, keeping the current height.
+ipcMain.on('reset-position', () => {
+  if (!win || win.isDestroyed()) return;
+  userPosition = null;
+  positionWindow(win.getBounds().height);
+});
 ipcMain.on('permission-decision', (_evt, { key, behavior }) => appState.resolvePermission(key, behavior));
 ipcMain.on('question-answer', (_evt, { key, answer }) => appState.resolveQuestion(key, answer));
 ipcMain.on('ask-answer', (_evt, { key, answers }) => appState.resolveAskUserQuestion(key, answers));

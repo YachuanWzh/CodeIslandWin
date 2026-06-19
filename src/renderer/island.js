@@ -260,4 +260,7 @@ function render({ model, pending, sounds }) {
   });
 }
 
+// Double-click the pill to bring a dragged island back to its top-center home.
+pillEl.addEventListener('dblclick', () => window.codeisland.resetPosition());
+
 window.codeisland.onState(render);
