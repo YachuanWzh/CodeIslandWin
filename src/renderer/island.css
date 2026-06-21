@@ -44,7 +44,7 @@ html, body {
   border: 1px solid #20232e;
   border-radius: 999px;
   padding: 6px 14px 6px 8px;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.45);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
   cursor: grab;
   transition: background 0.2s ease;
 }
@@ -105,7 +105,7 @@ html, body {
   display: none;
   flex-direction: column;
   gap: 6px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.45);
   /* Fill whatever window height main grants (it clamps the content-driven resize
      to the screen) and scroll internally for the overflow. min-height:0 lets this
      flex item shrink below its content so the scrollbar engages. A viewport-unit

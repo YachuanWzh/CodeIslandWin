@@ -70,6 +70,12 @@ function createWindow() {
   });
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  // A transparent window still swallows clicks on every pixel, so the fixed-width
+  // island would block the mostly-empty area around the pill. Start fully
+  // click-through; the renderer re-arms us (set-ignore-mouse) only while the
+  // cursor is over visible content. forward:true keeps move events flowing so the
+  // renderer can detect re-entry.
+  win.setIgnoreMouseEvents(true, { forward: true });
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
 
   // Remember where the user drags the island to. A move whose final position
@@ -140,6 +146,13 @@ app.whenReady().then(async () => {
 });
 
 ipcMain.on('resize', (_evt, height) => positionWindow(height));
+// Renderer hit-test result: ignore mouse events (pass clicks through to whatever
+// is underneath) everywhere except over the pill/panel. forward:true so we keep
+// receiving move events to re-arm when the cursor returns to content.
+ipcMain.on('set-ignore-mouse', (_evt, ignore) => {
+  if (!win || win.isDestroyed()) return;
+  win.setIgnoreMouseEvents(!!ignore, { forward: true });
+});
 // Manual drag from the renderer: remember the new top-left and apply it (height
 // stays whatever the content currently needs).
 ipcMain.on('move-window', (_evt, { x, y }) => {

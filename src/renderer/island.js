@@ -10,6 +10,10 @@ const pillStatusEl = document.getElementById('pill-status');
 const pillCountEl = document.getElementById('pill-count');
 const panelEl = document.getElementById('panel');
 
+// Vertical room reserved below the content so the drop shadow renders fully
+// instead of being clipped into a hard line by body{overflow:hidden}.
+const SHADOW_PAD = 28;
+
 const SOUND_MAP = {
   SessionStart: '8bit_boot',
   UserPromptSubmit: '8bit_submit',
@@ -256,6 +260,10 @@ function render({ model, pending, sounds }) {
     if (!islandEl.classList.contains('collapsed')) {
       h += 6 /* gap above panel */ + panelEl.scrollHeight;
     }
+    // body{overflow:hidden} clips any drop shadow reaching past the window edge —
+    // that hard line is the "weird" bottom shadow. Reserve room for it. The pad is
+    // transparent and click-through, so it costs nothing in occlusion.
+    h += SHADOW_PAD;
     window.codeisland.resize(h);
   });
 }
@@ -284,6 +292,26 @@ window.addEventListener('mousemove', (e) => {
 });
 
 window.addEventListener('mouseup', () => { dragStart = null; });
+
+// Click-through: the transparent window swallows clicks on every pixel, so the
+// area around the visible pill/panel would block whatever is underneath. Hit-test
+// the cursor and tell main to ignore mouse events everywhere except over content.
+// Because main forwards moves while ignoring, this handler keeps firing so we can
+// re-arm the window the moment the cursor returns to the pill/panel.
+let ignoringMouse = null;
+function updateMousePassthrough(x, y) {
+  // Stay interactive throughout a drag so a fast drag isn't dropped mid-move.
+  let overContent = !!dragStart;
+  if (!overContent) {
+    const el = document.elementFromPoint(x, y);
+    overContent = !!el && (pillEl.contains(el) || panelEl.contains(el));
+  }
+  const ignore = !overContent;
+  if (ignore === ignoringMouse) return;
+  ignoringMouse = ignore;
+  window.codeisland.setIgnoreMouse(ignore);
+}
+window.addEventListener('mousemove', (e) => updateMousePassthrough(e.clientX, e.clientY));
 
 // Double-click the pill to bring a dragged island back to its top-center home.
 pillEl.addEventListener('dblclick', () => window.codeisland.resetPosition());
