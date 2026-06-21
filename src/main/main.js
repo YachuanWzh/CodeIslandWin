@@ -7,6 +7,7 @@ const { createHookServer } = require('../server/hookServer');
 const { renderModel } = require('../renderer/renderModel');
 const { computeWindowBounds } = require('./windowLayout');
 const { pipePath } = require('../core/pipePath');
+const { resolveBridgePath } = require('../core/bridgeResolver');
 const { installClaudeHooks, uninstallClaudeHooks } = require('../core/configInstaller');
 
 const WIN_WIDTH = 420;
@@ -26,7 +27,9 @@ let userPosition = null;
 let lastSetBounds = null;
 
 function bridgePath() {
-  return path.join(__dirname, '..', 'bridge', 'bridge.js');
+  // Redirect into app.asar.unpacked when packaged so the hook's plain `node`
+  // can read bridge.js (it cannot read files inside the asar archive).
+  return resolveBridgePath(__dirname);
 }
 
 function positionWindow(height) {
