@@ -1,6 +1,7 @@
 {
   "name": "codeisland-win",
   "version": "0.1.0",
+  "author": "yachuan",
   "description": "Real-time AI coding agent status island for Windows (Claude Code). A Windows port of CodeIsland.",
   "main": "src/main/main.js",
   "scripts": {
