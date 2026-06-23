@@ -106,11 +106,14 @@ html, body {
   flex-direction: column;
   gap: 6px;
   box-shadow: 0 6px 20px rgba(0,0,0,0.45);
-  /* Fill whatever window height main grants (it clamps the content-driven resize
-     to the screen) and scroll internally for the overflow. min-height:0 lets this
-     flex item shrink below its content so the scrollbar engages. A viewport-unit
-     cap here would instead feed back into the resize loop and collapse the island. */
-  flex: 1 1 auto;
+  /* Size to content (grow:0) so the panel does NOT expand into the transparent
+     SHADOW_PAD the renderer reserves below it — otherwise the dark panel
+     background fills that reserve and shows as a blank strip under the content.
+     shrink:1 + min-height:0 still lets the panel shrink below its content and
+     scroll internally when main clamps the window to the screen height. A
+     viewport-unit cap here would instead feed back into the resize loop and
+     collapse the island. */
+  flex: 0 1 auto;
   min-height: 0;
   overflow-y: auto;
 }
